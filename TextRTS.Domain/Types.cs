@@ -10,11 +10,16 @@
 
     public record RenderableMapSquare(short X, short Y, string HexColor, string CharacterSymbol);
 
-    public record Map(ICollection<MapSquare> Squares)
+    public record Map(ICollection<MapSquare> Squares, Dictionary<string, Character> Characters)
     {
         public short TotalX { get { return (short)(Squares.Max(s => s.X) + (short)1); } }
 
         public short TotalY { get { return (short)(Squares.Max(s => s.Y) + (short)1); } }
-
     }
+
+    public abstract record MoveableCharacter(short X, short Y);
+
+    public record CharacterSprite(string ColorHexCode, string CharacterSymbol);
+
+    public record Character(short X, short Y, CharacterSprite CharacterSprite) : MoveableCharacter(X, Y);
 }

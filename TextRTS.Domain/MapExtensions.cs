@@ -2,6 +2,13 @@
 {
     public static class MapExtensions
     {
+        public static Result<IEnumerable<KeyValuePair<string, Character>>, string> GetCharactersForLocation(this Map map, short x, short y)
+        {
+            var record = map.Characters
+                .Where(squareLocation => squareLocation.Value.X == x && squareLocation.Value.Y == y);
+
+            return new Result<IEnumerable<KeyValuePair<string, Character>>, string>.Success(record);
+        }
 
         public static Result<MapSquare, string> GetSquareForLocation(this Map map, short x, short y)
         {
@@ -37,18 +44,46 @@
 
             for (var x = offsetX; x < xRenderScreen + offsetX; x++)
             {
+                var charactersAtLocation = map.GetCharactersForLocation(x, y);
                 Result<MapSquare, string> result = map.GetSquareForLocation(x, y);
-                if (result.IsFailure)
-                    return new Result<RenderableMapRow, string>.Failure($"Unable to locate a map row @ ({y}). - {result.AsFailure}");
-                rowBuilder.Add(result.AsSuccess.ToRenderableMapSquare());
+
+
+                var (anyFailues, failureList) = ResultExtensions.GetAllFailures(charactersAtLocation, result);
+
+                if (anyFailues)
+                    return new Result<RenderableMapRow, string>.Failure($"Unable to locate a map row @ ({y}). - {string.Join(";", failureList)}");
+                rowBuilder.Add(result.AsSuccess.ToRenderableMapSquare(charactersAtLocation.AsSuccess));
             }
 
             return new Result<RenderableMapRow, string>.Success(new RenderableMapRow(rowBuilder, y));
         }
 
-        private static RenderableMapSquare ToRenderableMapSquare(this MapSquare mapSquare)
+        private static RenderableMapSquare ToRenderableMapSquare(this MapSquare mapSquare, IEnumerable<KeyValuePair<string, Character>> charactersOnSquare)
         {
-            return new RenderableMapSquare(mapSquare.X, mapSquare.Y, mapSquare.TerainType.ColorHexCode, mapSquare.TerainType.CharacterSymbol);
+            var (hexCode, characterSymbol) = GetHexAndSymbol(mapSquare, charactersOnSquare);
+            return new RenderableMapSquare(mapSquare.X, mapSquare.Y, hexCode, characterSymbol);
+        }
+
+        private static (string hexCode, string characterSymbol) GetHexAndSymbol(MapSquare mapSquare, IEnumerable<KeyValuePair<string, Character>> charactersOnSquare)
+        {
+            string hexCode, characterSymbol = String.Empty;
+            hexCode = mapSquare.TerainType.ColorHexCode;
+            characterSymbol = mapSquare.TerainType.CharacterSymbol;
+            switch (charactersOnSquare.Count())
+            {
+                case 0:
+                    hexCode = mapSquare.TerainType.ColorHexCode;
+                    characterSymbol = mapSquare.TerainType.CharacterSymbol;
+                    break;
+                case 1:
+                    hexCode = charactersOnSquare.First().Value.CharacterSprite.ColorHexCode;
+                    characterSymbol = charactersOnSquare.First().Value.CharacterSprite.CharacterSymbol;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return (hexCode, characterSymbol);
         }
     }
 }

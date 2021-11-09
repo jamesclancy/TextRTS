@@ -14,7 +14,7 @@ namespace TextRTS.Domain.Tests
                                .Select(x =>
                                     new MapSquare((short)x, (short)y,
                                     new TerainType("Water", "#0000ff", "🌊"))));
-        public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)));
+        public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), new Dictionary<string, Character>());
 
         [Fact]
         public void Map_TotalX_Correct()

@@ -16,11 +16,17 @@ namespace TextRTS
                        .Select(x =>
                             new MapSquare((short)x, (short)y,
                             new TerainType("Water", "#0000ff", "~~"))));
-        private static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)));
+
+        private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
+        {
+            { "PLAYER", new Character(1,1,new CharacterSprite("#434300", "ME")) }
+        };
+
+
+        private static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap);
 
         public static async Task Main(string[] args)
         {
-
             var map = TestMap(100, 100);
 
             short xScreen = 20;
@@ -43,11 +49,10 @@ namespace TextRTS
                     for (int y = 0; y < yScreen; y++)
                         table.AddEmptyRow();
 
-                    GameViewState gameViewState = new GameViewState(map, table, xScreen, yScreen, (short)0, (short)0, string.Empty, false, string.Empty);
+                    GameViewState gameViewState = new GameViewState(map, table, xScreen, yScreen, (short)0, (short)0, string.Empty, GameInputEntryType.None, string.Empty);
 
                     while (true)
                     {
-
                         UpdateTableForMap(gameViewState);
                         ctx.Refresh();
                         await Task.Delay(10);
@@ -62,47 +67,46 @@ namespace TextRTS
 
         public static GameViewState ReduceKeyDowns(GameViewState currentViewState)
         {
-            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, bool waitForLineReturn, string currentBuildingInput) = currentViewState;
+            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, GameInputEntryType entryType, string currentBuildingInput) = currentViewState;
 
             ConsoleKeyInfo currentKeyDown = Console.ReadKey(true);
 
             if (currentViewState.Exit || currentKeyDown.Key == ConsoleKey.Escape)
                 return currentViewState with { Exit = true };
 
-            if (!waitForLineReturn)
+            if (entryType == GameInputEntryType.None)
             {
                 alertMessage = string.Empty;
 
-                if (currentKeyDown.Key == ConsoleKey.LeftArrow)
+                switch (currentKeyDown.Key)
                 {
-                    if (viewPortXStart > 0)
-                        viewPortXStart--;
-                    else alertMessage = "You have reached the end of map and I cannot move left anymore.";
-                }
-                if (currentKeyDown.Key == ConsoleKey.RightArrow)
-                {
-                    if (viewPortXStart < map.TotalX - xScreen)
-                        viewPortXStart++;
-                    else alertMessage = "You have reached the end of map and I cannot move right anymore.";
-                }
-                if (currentKeyDown.Key == ConsoleKey.UpArrow)
-                {
-                    if (viewPortYStart > 0)
-                        viewPortYStart--;
-                    else alertMessage = "You have reached the end of map and I cannot move up anymore.";
-                }
-                if (currentKeyDown.Key == ConsoleKey.DownArrow)
-                {
-                    if (viewPortYStart < map.TotalY - yScreen)
-                        viewPortYStart++;
-                    else alertMessage = "You have reached the end of map and I cannot move down anymore.";
-                }
-                if (currentKeyDown.Key == ConsoleKey.M)
-                {
-                    currentBuildingInput = string.Empty;
-                    waitForLineReturn = true;
-
-                    alertMessage = "Enter movement to attempt to move to? `xx,yy`:";
+                    case ConsoleKey.LeftArrow:
+                        if (viewPortXStart > 0)
+                            viewPortXStart--;
+                        else alertMessage = Constants.CannotMoveMap("left");
+                        break;
+                    case ConsoleKey.RightArrow:
+                        if (viewPortXStart < map.TotalX - xScreen)
+                            viewPortXStart++;
+                        else alertMessage = Constants.CannotMoveMap("right");
+                        break;
+                    case ConsoleKey.UpArrow:
+                        if (viewPortYStart > 0)
+                            viewPortYStart--;
+                        else alertMessage = Constants.CannotMoveMap("up");
+                        break;
+                    case ConsoleKey.DownArrow:
+                        if (viewPortYStart < map.TotalY - yScreen)
+                            viewPortYStart++;
+                        else alertMessage = Constants.CannotMoveMap("down");
+                        break;
+                    case ConsoleKey.M:
+                        currentBuildingInput = string.Empty;
+                        entryType = GameInputEntryType.MovementPosition;
+                        alertMessage = Constants.EnterMovementMessage;
+                        break;
+                    default:
+                        break;
                 }
             }
             else
@@ -110,7 +114,7 @@ namespace TextRTS
                 if (currentKeyDown.Key == ConsoleKey.Enter)
                 {
                     currentBuildingInput = string.Empty;
-                    waitForLineReturn = false;
+                    entryType = GameInputEntryType.None;
                 }
                 else
                 {
@@ -118,18 +122,20 @@ namespace TextRTS
                 }
             }
 
-            return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage, waitForLineReturn, currentBuildingInput);
+            return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage, entryType, currentBuildingInput);
         }
 
 
         public static void UpdateTableForMap(GameViewState gameViewModel)
         {
-            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, bool waitForLineReturn, string currentBuildingInput) = gameViewModel;
+            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, GameInputEntryType entryType, string currentBuildingInput) = gameViewModel;
 
             if (string.IsNullOrEmpty(alertMessage))
-                alertMessage = "Use the arrow keys to navigate the work. Press Esc to exit.";
+                alertMessage = Constants.GenericUserDirections;
 
-            table.Caption = waitForLineReturn ? new TableTitle($"[red]{alertMessage}[/] : [bold yellow]{currentBuildingInput}[/]") : new TableTitle($"[red]{alertMessage}[/]");
+            table.Caption = entryType == GameInputEntryType.None ?
+                CaptionWithoutBuildingInput(alertMessage)
+                : CaptionWithBuildingInput(alertMessage, currentBuildingInput);
 
             for (int x = 1; x <= xScreen; x++)
                 table.Columns[x].Header = BuildColumnHeaderForXValue(x + viewPortXStart);
@@ -151,25 +157,23 @@ namespace TextRTS
         private static IRenderable RenderCellContent(Result<RenderableMapTable, string> renderableMap, int y, int x)
         {
             var cell = renderableMap.AsSuccess.Rows[y].RenderableMapSquares[x];
-
             return new Markup($"[#{cell.HexColor}]{cell.CharacterSymbol}[/]");
         }
+        private static IRenderable BuildColumnHeaderForXValue(int x) => new Markup($"[green]{x.ToString("00")}[/]");
+        private static IRenderable BuildRowHeaderForYValue(int y) => new Markup($"[green]{y.ToString("00")}[/]");
+        public static TableTitle CaptionWithoutBuildingInput(string alertMessage) => new TableTitle($"[red]{alertMessage}[/]");
+        public static TableTitle CaptionWithBuildingInput(string alertMessage, string currentBuildingInput) => new TableTitle($"[red]{alertMessage}[/] : [bold yellow]{currentBuildingInput}[/]");
 
-        private static IRenderable BuildColumnHeaderForXValue(int x)
-        {
-            var formatedXValue = x.ToString("00");
-            return new Markup($"[green]{formatedXValue}[/]");
-        }
 
-        private static IRenderable BuildRowHeaderForYValue(int y)
-        {
-            var formatedYValue = y.ToString("00");
-            return new Markup($"[green]{formatedYValue}[/]");
-        }
-
-        public record GameViewState(Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, bool waitForLineReturn, string currentBuildingInput)
+        public record GameViewState(Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, GameInputEntryType entryType, string currentBuildingInput)
         {
             public bool Exit { get; init; }
+        }
+
+        public enum GameInputEntryType
+        {
+            None = 0,
+            MovementPosition = 1
         }
     }
 }
