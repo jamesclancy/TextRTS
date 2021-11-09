@@ -15,11 +15,11 @@ namespace TextRTS
            .SelectMany(y => Enumerable.Range(0, totalX)
                        .Select(x =>
                             new MapSquare((short)x, (short)y,
-                            new TerainType("Water", "#0000ff", "~~"))));
+                            new TerainType("Water", "#0000ff", ":water_wave:"))));
 
         private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
         {
-            { "PLAYER", new Character(1,1,new CharacterSprite("#434300", "ME")) }
+            { "PLAYER", new Character(1,1,new CharacterSprite("#434300", ":robot:")) }
         };
 
 
@@ -27,6 +27,8 @@ namespace TextRTS
 
         public static async Task Main(string[] args)
         {
+            System.Console.OutputEncoding = System.Text.Encoding.UTF8; // Hacky solution for emojis to work on windows. 
+
             var map = TestMap(100, 100);
 
             short xScreen = 20;
@@ -163,7 +165,6 @@ namespace TextRTS
         private static IRenderable BuildRowHeaderForYValue(int y) => new Markup($"[green]{y.ToString("00")}[/]");
         public static TableTitle CaptionWithoutBuildingInput(string alertMessage) => new TableTitle($"[red]{alertMessage}[/]");
         public static TableTitle CaptionWithBuildingInput(string alertMessage, string currentBuildingInput) => new TableTitle($"[red]{alertMessage}[/] : [bold yellow]{currentBuildingInput}[/]");
-
 
         public record GameViewState(Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, GameInputEntryType entryType, string currentBuildingInput)
         {

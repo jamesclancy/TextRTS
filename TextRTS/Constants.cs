@@ -18,6 +18,5 @@ namespace TextRTS
 
         // Not so constant constants
         public static string CannotMoveMap(string directionTryingToMoveTo) => string.Format(CannotMoveMapMessage, directionTryingToMoveTo);
-
     }
 }
