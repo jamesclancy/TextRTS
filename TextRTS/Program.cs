@@ -2,9 +2,7 @@
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using TextRTS.Domain;
-
-
-
+using TextRTS.Domain.Extensions;
 
 namespace TextRTS
 {

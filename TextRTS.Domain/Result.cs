@@ -6,9 +6,25 @@
         public bool IsFailure => this is Failure;
 
 
-        public TSuccess? AsSuccess => this as Success;
-        public TFailure? AsFailure => this as Failure;
+        public TSuccess AsSuccess
+        {
+            get
+            {
+                var suc = this as Success;
+                if (suc == null) throw new InvalidOperationException();
+                return suc;
+            }
+        }
 
+        public TFailure AsFailure
+        {
+            get
+            {
+                var failure = this as Failure;
+                if (failure == null) throw new InvalidOperationException();
+                return failure;
+            }
+        } 
 
         public record Success(TSuccess Value) : Result<TSuccess, TFailure>
         {
@@ -26,13 +42,13 @@
     public interface IFailureOfCertainType<TFailure>
     {
         public bool IsFailure { get; }
-        public TFailure? AsFailure { get; }
+        public TFailure AsFailure { get; }
     }
 
     public interface ISuccessOfCertainType<TSuccess>
     {
         public bool IsSuccess { get; }
-        public TSuccess? AsSuccess { get; }
+        public TSuccess AsSuccess { get; }
     }
 
     public static class ResultExtensions

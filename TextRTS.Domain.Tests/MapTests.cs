@@ -2,6 +2,7 @@
 using TextRTS.Domain;
 using System.Linq;
 using System.Collections.Generic;
+using TextRTS.Domain.Extensions;
 
 namespace TextRTS.Domain.Tests
 {
