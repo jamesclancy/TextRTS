@@ -1,4 +1,7 @@
-﻿namespace TextRTS.Domain.Extensions
+﻿using TestRTS.Contracts;
+using TestRTS.Contracts.Extensions;
+
+namespace TextRTS.Domain.Extensions
 {
     public static class MapExtensions
     {

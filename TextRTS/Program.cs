@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Spectre.Console;
 using Spectre.Console.Rendering;
+using TestRTS.Contracts;
 using TextRTS.Domain;
 using TextRTS.Domain.Extensions;
 
