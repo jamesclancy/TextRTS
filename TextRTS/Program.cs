@@ -13,12 +13,12 @@ namespace TextRTS
          Enumerable.Range(0, totalY)
            .SelectMany(y => Enumerable.Range(0, totalX)
                        .Select(x =>
-                            new MapSquare((short)x, (short)y,
+                            new MapSquare(new Position((short)x, (short)y),
                             new TerainType("Water", "#0000ff", ":water_wave:"))));
 
         private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
         {
-            { "PLAYER", new Character(1,1,new CharacterSprite("#434300", ":robot:")) }
+            { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:")) }
         };
 
 
@@ -114,8 +114,26 @@ namespace TextRTS
             {
                 if (currentKeyDown.Key == ConsoleKey.Enter)
                 {
-                    currentBuildingInput = string.Empty;
-                    entryType = GameInputEntryType.None;
+                    switch (entryType)
+                    {
+                        case GameInputEntryType.MovementPosition:
+                            var parsedNewLocation = Position.ParseInputForNewLocation(currentBuildingInput);
+                            if (parsedNewLocation.IsSuccess)
+                            {
+                                map = MovePlayer(map, parsedNewLocation.AsSuccess);
+                                currentBuildingInput = string.Empty;
+                                entryType = GameInputEntryType.None;
+                                alertMessage = "You have moved to a new exiciting location";
+                            }
+                            else
+                            {
+                                alertMessage = $"{Constants.EnterMovementMessage}-[red]{parsedNewLocation.AsFailure}- Please try again[/]";
+                                currentBuildingInput = string.Empty;
+                            }
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
                 }
                 else
                 {
@@ -126,6 +144,13 @@ namespace TextRTS
             return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage, entryType, currentBuildingInput);
         }
 
+        public static Map MovePlayer(Map map, Position newPlayerPosition)
+        {
+            var newChars = map.Characters;
+            newChars[Constants.PlayerId] = newChars[Constants.PlayerId] with { Position = newPlayerPosition };
+
+            return map with { Characters = newChars };
+        }
 
         public static void UpdateTableForMap(GameViewState gameViewModel)
         {

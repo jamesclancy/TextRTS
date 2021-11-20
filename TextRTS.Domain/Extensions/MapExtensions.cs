@@ -8,7 +8,7 @@ namespace TextRTS.Domain.Extensions
         public static Result<IEnumerable<KeyValuePair<string, Character>>, string> GetCharactersForLocation(this Map map, short x, short y)
         {
             var record = map.Characters
-                .Where(squareLocation => squareLocation.Value.X == x && squareLocation.Value.Y == y);
+                .Where(squareLocation => squareLocation.Value.Position.X == x && squareLocation.Value.Position.Y == y);
 
             return new Result<IEnumerable<KeyValuePair<string, Character>>, string>.Success(record);
         }
@@ -16,7 +16,7 @@ namespace TextRTS.Domain.Extensions
         public static Result<MapSquare, string> GetSquareForLocation(this Map map, short x, short y)
         {
             var record = map.Squares
-                .FirstOrDefault(squareLocation => squareLocation.X == x && squareLocation.Y == y);
+                .FirstOrDefault(squareLocation => squareLocation.Position.X == x && squareLocation.Position.Y == y);
 
             if (record == null)
                 return new Result<MapSquare, string>.Failure($"Unable to locate a map tile @ ({x},{y}).");

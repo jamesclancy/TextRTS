@@ -13,7 +13,7 @@ namespace TextRTS.Domain.Tests
                  Enumerable.Range(0, totalY)
                    .SelectMany(y => Enumerable.Range(0, totalX)
                                .Select(x =>
-                                    new MapSquare((short)x, (short)y,
+                                    new MapSquare(new Position((short)x, (short)y),
                                     new TerainType("Water", "#0000ff", "🌊"))));
         public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), new Dictionary<string, Character>());
 
@@ -63,8 +63,8 @@ namespace TextRTS.Domain.Tests
             var result = tenByTwentyMap.GetSquareForLocation(x, y);
 
             Assert.True(result.IsSuccess);
-            Assert.Equal(x, result.AsSuccess.X);
-            Assert.Equal(y, result.AsSuccess.Y);
+            Assert.Equal(x, result.AsSuccess.Position.X);
+            Assert.Equal(y, result.AsSuccess.Position.Y);
 
         }
 

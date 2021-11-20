@@ -5,7 +5,7 @@
         public static RenderableMapSquare ToRenderableMapSquare(this MapSquare mapSquare, IEnumerable<KeyValuePair<string, Character>> charactersOnSquare)
         {
             var (hexCode, characterSymbol) = GetHexAndSymbol(mapSquare, charactersOnSquare);
-            return new RenderableMapSquare(mapSquare.X, mapSquare.Y, hexCode, characterSymbol);
+            return new RenderableMapSquare(mapSquare.Position, hexCode, characterSymbol);
         }
 
         private static (string hexCode, string characterSymbol) GetHexAndSymbol(MapSquare mapSquare, IEnumerable<KeyValuePair<string, Character>> charactersOnSquare)
