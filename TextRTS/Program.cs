@@ -13,8 +13,15 @@ namespace TextRTS
          Enumerable.Range(0, totalY)
            .SelectMany(y => Enumerable.Range(0, totalX)
                        .Select(x =>
-                            new MapSquare(new Position((short)x, (short)y),
-                            new TerainType("Water", x != y, "#0000ff", ":water_wave:"))));
+                            new MapSquare(new Position((short)x, (short)y), GenerateTerain((short)x, (short)y))));
+
+        private static TerainType GenerateTerain(short x, short y)
+        {
+            if (x != y)
+                return new TerainType("Water", true, "#0000ff", ":water_wave:");
+
+            return new TerainType("Mountain", false, "#ffff00", ":mountain:");
+        }
 
         private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
         {
@@ -152,13 +159,13 @@ namespace TextRTS
                 else
                 {
 
-                    alertMessage = $"{Constants.EnterMovementMessage}-[red]{movePlayerNewMap.AsFailure}- Please try again[/]";
+                    alertMessage = $"{movePlayerNewMap.AsFailure}. Please enter another location (XX,YY):";
                     currentBuildingInput = string.Empty;
                 }
             }
             else
             {
-                alertMessage = $"{Constants.EnterMovementMessage}-[red]{parsedNewLocation.AsFailure}- Please try again[/]";
+                alertMessage = $"{parsedNewLocation.AsFailure}. Please enter another location (XX,YY):";
                 currentBuildingInput = string.Empty;
             }
 

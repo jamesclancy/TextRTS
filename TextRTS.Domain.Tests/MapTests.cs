@@ -20,7 +20,7 @@ namespace TextRTS.Domain.Tests
                                .Select(x =>
                                     new MapSquare(new Position((short)x, (short)y),
                                     new TerainType("Water", x != y, "#0000ff", "🌊"))));
-        
+
         public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap);
 
         [Fact]
