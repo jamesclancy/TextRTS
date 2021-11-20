@@ -14,13 +14,12 @@ namespace TextRTS
            .SelectMany(y => Enumerable.Range(0, totalX)
                        .Select(x =>
                             new MapSquare(new Position((short)x, (short)y),
-                            new TerainType("Water", "#0000ff", ":water_wave:"))));
+                            new TerainType("Water", x != y, "#0000ff", ":water_wave:"))));
 
         private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
         {
             { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:")) }
         };
-
 
         private static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap);
 
@@ -117,19 +116,7 @@ namespace TextRTS
                     switch (entryType)
                     {
                         case GameInputEntryType.MovementPosition:
-                            var parsedNewLocation = Position.ParseInputForNewLocation(currentBuildingInput);
-                            if (parsedNewLocation.IsSuccess)
-                            {
-                                map = MovePlayer(map, parsedNewLocation.AsSuccess);
-                                currentBuildingInput = string.Empty;
-                                entryType = GameInputEntryType.None;
-                                alertMessage = "You have moved to a new exiciting location";
-                            }
-                            else
-                            {
-                                alertMessage = $"{Constants.EnterMovementMessage}-[red]{parsedNewLocation.AsFailure}- Please try again[/]";
-                                currentBuildingInput = string.Empty;
-                            }
+                            (map, alertMessage, entryType, currentBuildingInput) = tryToMovePlayerForInput(map, entryType, currentBuildingInput);
                             break;
                         default:
                             throw new NotImplementedException();
@@ -144,12 +131,38 @@ namespace TextRTS
             return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage, entryType, currentBuildingInput);
         }
 
-        public static Map MovePlayer(Map map, Position newPlayerPosition)
+        private static (Map map, string alertMessage, GameInputEntryType entryType, string currentBuildingInput) tryToMovePlayerForInput(Map map, GameInputEntryType entryType, string currentBuildingInput)
         {
-            var newChars = map.Characters;
-            newChars[Constants.PlayerId] = newChars[Constants.PlayerId] with { Position = newPlayerPosition };
+            string alertMessage;
 
-            return map with { Characters = newChars };
+            var parsedNewLocation = Position.ParseInputForNewLocation(currentBuildingInput);
+            if (parsedNewLocation.IsSuccess)
+            {
+                var movePlayerNewMap = map.TryToMovePlayer(parsedNewLocation.AsSuccess);
+
+                if (movePlayerNewMap.IsSuccess)
+                {
+                    map = movePlayerNewMap.AsSuccess;
+                    currentBuildingInput = string.Empty;
+                    entryType = GameInputEntryType.None;
+                    alertMessage = "You have moved to a new exiciting location";
+
+                    return (map, alertMessage, entryType, currentBuildingInput);
+                }
+                else
+                {
+
+                    alertMessage = $"{Constants.EnterMovementMessage}-[red]{movePlayerNewMap.AsFailure}- Please try again[/]";
+                    currentBuildingInput = string.Empty;
+                }
+            }
+            else
+            {
+                alertMessage = $"{Constants.EnterMovementMessage}-[red]{parsedNewLocation.AsFailure}- Please try again[/]";
+                currentBuildingInput = string.Empty;
+            }
+
+            return (map, alertMessage, entryType, currentBuildingInput);
         }
 
         public static void UpdateTableForMap(GameViewState gameViewModel)

@@ -60,5 +60,33 @@ namespace TextRTS.Domain.Extensions
 
             return new Result<RenderableMapRow, string>.Success(new RenderableMapRow(rowBuilder, y));
         }
+
+        public static Result<Map, string> TryToMovePlayer(this Map map, Position newPlayerPosition)
+        {
+            var newChars = map.Characters;
+
+            var location = map.GetSquareForLocation(newPlayerPosition.X, newPlayerPosition.Y);
+            var characters = map.GetCharactersForLocation(newPlayerPosition.X, newPlayerPosition.Y);
+
+            if (location.IsFailure)
+                return new Result<Map, string>.Failure("Location does not exist on map");
+
+            var terrain = location.AsSuccess.TerainType;
+
+            if (!terrain.IsPassable)
+            {
+                return new Result<Map, string>.Failure($"You are not currently able to visit {terrain.Name} locations.");
+            }
+
+            if (characters.IsSuccess && characters.AsSuccess.Any())
+            {
+                // Somebody else is here? You wanna fight them
+                return new Result<Map, string>.Failure("Unable to move there someone is already there? Maybe you should attack them.");
+            }
+
+            newChars[Constants.PlayerId] = newChars[Constants.PlayerId] with { Position = newPlayerPosition };
+
+            return new Result<Map, string>.Success(map with { Characters = newChars });
+        }
     }
 }

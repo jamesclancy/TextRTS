@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TextRTS
+namespace TestRTS.Contracts
 {
     public static class Constants
     {

@@ -21,7 +21,7 @@ namespace TextRTS.Domain
 
     public record MapSquare(Position Position, TerainType TerainType);
 
-    public record TerainType(string Name, string ColorHexCode, string CharacterSymbol);
+    public record TerainType(string Name, bool IsPassable, string ColorHexCode, string CharacterSymbol);
 
     public record RenderableMapRow(List<RenderableMapSquare> RenderableMapSquares, short CurrentY);
 

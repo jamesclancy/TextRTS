@@ -3,19 +3,25 @@ using TextRTS.Domain;
 using System.Linq;
 using System.Collections.Generic;
 using TextRTS.Domain.Extensions;
+using TestRTS.Contracts;
 
 namespace TextRTS.Domain.Tests
 {
     public class MapTests
     {
 
+        private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
+        {
+            { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:")) }
+        };
+
         public static IEnumerable<MapSquare> TestSquares(short totalX, short totalY) =>
                  Enumerable.Range(0, totalY)
                    .SelectMany(y => Enumerable.Range(0, totalX)
                                .Select(x =>
                                     new MapSquare(new Position((short)x, (short)y),
-                                    new TerainType("Water", "#0000ff", "🌊"))));
-        public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), new Dictionary<string, Character>());
+                                    new TerainType("Water", x != y, "#0000ff", "🌊"))));
+        public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap);
 
         [Fact]
         public void Map_TotalX_Correct()
@@ -80,6 +86,36 @@ namespace TextRTS.Domain.Tests
             Assert.True(result.IsSuccess);
             Assert.Equal(yRenderScreen, result.AsSuccess.Rows.Count);
             Assert.All(result.AsSuccess.Rows, x => Assert.Equal(x.RenderableMapSquares.Count, xRenderScreen));
+        }
+
+        [Theory]
+        [InlineData(0,1)]
+        [InlineData(4,7)]
+        [InlineData(0, 15)]
+        [InlineData(4, 0)]
+        public void Map_TryToMovePlayer_Succeeds(short x, short y)
+        {
+            var tenByTwentyMap = TestMap(10, 20);
+            var result = tenByTwentyMap.TryToMovePlayer(new Position(x, y));
+
+            Assert.True(result.IsSuccess);
+
+            var resultIds = result.AsSuccess.GetCharactersForLocation(x, y).AsSuccess.Select(x => x.Key);
+            IEnumerable<string> expectedKeys = new List<string> { Constants.PlayerId };
+            Assert.Equal(expectedKeys, resultIds);
+        }
+
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(4, 4)]
+        [InlineData(40, 4)]
+        public void Map_TryToMovePlayer_Failues(short x, short y)
+        {
+            var tenByTwentyMap = TestMap(10, 20);
+            var result = tenByTwentyMap.TryToMovePlayer(new Position(x, y));
+
+            Assert.True(result.IsFailure);
         }
     }
 }
