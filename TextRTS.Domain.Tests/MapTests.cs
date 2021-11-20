@@ -9,7 +9,6 @@ namespace TextRTS.Domain.Tests
 {
     public class MapTests
     {
-
         private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
         {
             { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:")) }
@@ -21,6 +20,7 @@ namespace TextRTS.Domain.Tests
                                .Select(x =>
                                     new MapSquare(new Position((short)x, (short)y),
                                     new TerainType("Water", x != y, "#0000ff", "🌊"))));
+        
         public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap);
 
         [Fact]
@@ -54,7 +54,6 @@ namespace TextRTS.Domain.Tests
             Assert.Equal($"Unable to locate a map tile @ ({x},{y}).", result.AsFailure);
         }
 
-
         [Theory]
         [InlineData(0, 0)]
         [InlineData(1, 1)]
@@ -64,7 +63,6 @@ namespace TextRTS.Domain.Tests
         [InlineData(5, 13)]
         public void Map_GetSquareForLocation_Found_SuccessReturned(short x, short y)
         {
-
             var tenByTwentyMap = TestMap(10, 20);
             var result = tenByTwentyMap.GetSquareForLocation(x, y);
 
@@ -89,8 +87,8 @@ namespace TextRTS.Domain.Tests
         }
 
         [Theory]
-        [InlineData(0,1)]
-        [InlineData(4,7)]
+        [InlineData(0, 1)]
+        [InlineData(4, 7)]
         [InlineData(0, 15)]
         [InlineData(4, 0)]
         public void Map_TryToMovePlayer_Succeeds(short x, short y)
@@ -104,7 +102,6 @@ namespace TextRTS.Domain.Tests
             IEnumerable<string> expectedKeys = new List<string> { Constants.PlayerId };
             Assert.Equal(expectedKeys, resultIds);
         }
-
 
         [Theory]
         [InlineData(0, 0)]

@@ -24,10 +24,8 @@ namespace TextRTS.Domain.Extensions
             return new Result<MapSquare, string>.Success(record);
         }
 
-
         public static Result<RenderableMapTable, string> GetRenderableTable(this Map map, short offsetX, short offsetY, short xRenderScreen, short yRenderScreen)
         {
-
             var rows = new List<RenderableMapRow>();
             for (var y = offsetY; y < yRenderScreen + offsetY; y++)
             {
@@ -35,7 +33,6 @@ namespace TextRTS.Domain.Extensions
                 if (result.IsFailure)
                     return new Result<RenderableMapTable, string>.Failure($"Unable to generate specified renderable table. - {result.AsFailure}");
                 rows.Add(result.AsSuccess);
-
             }
 
             return new Result<RenderableMapTable, string>.Success(new RenderableMapTable(rows, offsetX, offsetY, xRenderScreen, yRenderScreen, map.TotalX, map.TotalY));
@@ -49,7 +46,6 @@ namespace TextRTS.Domain.Extensions
             {
                 var charactersAtLocation = map.GetCharactersForLocation(x, y);
                 Result<MapSquare, string> result = map.GetSquareForLocation(x, y);
-
 
                 var (anyFailues, failureList) = ResultExtensions.GetAllFailures(charactersAtLocation, result);
 
