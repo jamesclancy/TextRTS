@@ -68,8 +68,8 @@ namespace TextRTS.Domain.Extensions
             if (!isValidToMoveTo)
                 return invalidMovementReason switch
                 {
-                    InvalidMovementReason.ImpassableLocation => new Result<Map, string>.Failure("Location does not exist on map."),
-                    InvalidMovementReason.LocationDoesNotExist => new Result<Map, string>.Failure($"You are not currently able to visit {terrainName} locations."),
+                    InvalidMovementReason.LocationDoesNotExist => new Result<Map, string>.Failure("Location does not exist on map."),
+                    InvalidMovementReason.ImpassableLocation => new Result<Map, string>.Failure($"You are not currently able to visit {terrainName} locations."),
                     InvalidMovementReason.SomeoneAlreadyThere => new Result<Map, string>.Failure("Unable to move there someone is already there? Maybe you should attack them."),
                     _ => throw new NotImplementedException(),
                 };
