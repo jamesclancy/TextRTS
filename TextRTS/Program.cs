@@ -56,7 +56,10 @@ namespace TextRTS
                     for (int y = 0; y < yScreen; y++)
                         table.AddEmptyRow();
 
-                    GameViewState gameViewState = new GameViewState(map, table, xScreen, yScreen, (short)0, (short)0, string.Empty, GameInputEntryType.None, string.Empty);
+                    GameViewState gameViewState = new GameViewState(map, table, xScreen, yScreen,
+                        (short)0, (short)0, string.Empty,
+                        GameInputEntryType.None, string.Empty, GameflowStep.AwaitingUserInput,
+                        GameflowProcessingType.None, string.Empty);
 
                     while (true)
                     {
@@ -74,7 +77,10 @@ namespace TextRTS
 
         public static GameViewState ReduceKeyDowns(GameViewState currentViewState)
         {
-            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, GameInputEntryType entryType, string currentBuildingInput) = currentViewState;
+            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
+                string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
+            GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
+                ) = currentViewState;
 
             ConsoleKeyInfo currentKeyDown = Console.ReadKey(true);
 
@@ -112,6 +118,11 @@ namespace TextRTS
                         entryType = GameInputEntryType.MovementPosition;
                         alertMessage = Constants.EnterMovementMessage;
                         break;
+                    case ConsoleKey.B:
+                        currentBuildingInput = string.Empty;
+                        entryType = GameInputEntryType.ThingToBuild;
+                        alertMessage = Constants.EnterThingToBuild;
+                        break;
                     default:
                         break;
                 }
@@ -123,7 +134,12 @@ namespace TextRTS
                     switch (entryType)
                     {
                         case GameInputEntryType.MovementPosition:
-                            (map, alertMessage, entryType, currentBuildingInput) = tryToMovePlayerForInput(map, entryType, currentBuildingInput);
+                            (map, alertMessage, entryType, currentBuildingInput,
+                                 gameflowStep, gameflowProcessingType, gameflowProcessingValue) = tryToMovePlayerForInput(map, entryType, currentBuildingInput,
+                                 gameflowStep, gameflowProcessingType, gameflowProcessingValue);
+                            gameflowStep = GameflowStep.Processing;
+                            gameflowProcessingValue = currentBuildingInput;
+                            gameflowProcessingType = GameflowProcessingType.MovingUser;
                             break;
                         default:
                             throw new NotImplementedException();
@@ -135,10 +151,16 @@ namespace TextRTS
                 }
             }
 
-            return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage, entryType, currentBuildingInput);
+            return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage,
+                entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
         }
 
-        private static (Map map, string alertMessage, GameInputEntryType entryType, string currentBuildingInput) tryToMovePlayerForInput(Map map, GameInputEntryType entryType, string currentBuildingInput)
+        private static (Map map, string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
+                                GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, 
+                                string gameflowProcessingValue) 
+            tryToMovePlayerForInput(Map map, GameInputEntryType entryType, string currentBuildingInput, 
+                                    GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, 
+                                    string gameflowProcessingValue)
         {
             string alertMessage;
 
@@ -154,7 +176,8 @@ namespace TextRTS
                     entryType = GameInputEntryType.None;
                     alertMessage = "You have moved to a new exiciting location";
 
-                    return (map, alertMessage, entryType, currentBuildingInput);
+                    return (map, alertMessage, entryType, currentBuildingInput,
+                        gameflowStep, gameflowProcessingType, gameflowProcessingValue);
                 }
                 else
                 {
@@ -169,12 +192,15 @@ namespace TextRTS
                 currentBuildingInput = string.Empty;
             }
 
-            return (map, alertMessage, entryType, currentBuildingInput);
+            return (map, alertMessage, entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
         }
 
         public static void UpdateTableForMap(GameViewState gameViewModel)
         {
-            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, GameInputEntryType entryType, string currentBuildingInput) = gameViewModel;
+            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
+                   string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
+               GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
+                   ) = gameViewModel;
 
             if (string.IsNullOrEmpty(alertMessage))
                 alertMessage = Constants.GenericUserDirections;
@@ -205,20 +231,41 @@ namespace TextRTS
             var cell = renderableMap.AsSuccess.Rows[y].RenderableMapSquares[x];
             return new Markup($"[#{cell.HexColor}]{cell.CharacterSymbol}[/]");
         }
+
         private static IRenderable BuildColumnHeaderForXValue(int x) => new Markup($"[green]{x.ToString("00")}[/]");
         private static IRenderable BuildRowHeaderForYValue(int y) => new Markup($"[green]{y.ToString("00")}[/]");
         public static TableTitle CaptionWithoutBuildingInput(string alertMessage) => new TableTitle($"[red]{alertMessage}[/]");
         public static TableTitle CaptionWithBuildingInput(string alertMessage, string currentBuildingInput) => new TableTitle($"[red]{alertMessage}[/] : [bold yellow]{currentBuildingInput}[/]");
 
-        public record GameViewState(Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, string alertMessage, GameInputEntryType entryType, string currentBuildingInput)
+        public record GameViewState(Map map, Table table,
+            short xScreen, short yScreen,
+            short viewPortXStart, short viewPortYStart,
+            string alertMessage,
+            GameInputEntryType entryType, string currentBuildingInput,
+            GameflowStep GameflowStep, GameflowProcessingType GameflowProcessingType, string GameflowProcessingValue)
         {
             public bool Exit { get; init; }
+        }
+
+        public enum GameflowStep
+        {
+            None = 0,
+            AwaitingUserInput = 1,
+            Processing = 2
+        }
+
+        public enum GameflowProcessingType
+        {
+            None = 0,
+            MovingUser = 1,
+            Building = 2
         }
 
         public enum GameInputEntryType
         {
             None = 0,
-            MovementPosition = 1
+            MovementPosition = 1,
+            ThingToBuild = 2
         }
     }
 }
