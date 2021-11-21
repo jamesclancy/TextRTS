@@ -65,104 +65,118 @@ namespace TextRTS
                     {
                         UpdateTableForMap(gameViewState);
                         ctx.Refresh();
-                        await Task.Delay(10);
-
-                        gameViewState = ReduceKeyDowns(gameViewState);
 
                         if (gameViewState.Exit)
                             return;
+
+                        switch(gameViewState.GameflowStep)
+                        {
+                            case GameflowStep.AwaitingUserInput:
+                                await Task.Delay(10);
+                                gameViewState = ReduceKeyDowns(gameViewState);
+                                break;
+                            case GameflowStep.Processing:
+                                await Task.Delay(100);
+                                gameViewState = ProcessStep(gameViewState);
+                                break;
+                        }
                     }
                 });
         }
 
+        private static GameViewState ProcessStep(GameViewState gameViewState)
+        {
+            return gameViewState.GameflowProcessingType switch
+            {
+                GameflowProcessingType.MovingUser => tryToMovePlayerForInput(gameViewState),
+                _ => throw new NotImplementedException(),
+            };
+        }
+
         public static GameViewState ReduceKeyDowns(GameViewState currentViewState)
+        {
+            ConsoleKeyInfo currentKeyDown = Console.ReadKey(true);
+
+            if (currentViewState.Exit || currentKeyDown.Key == ConsoleKey.Escape)
+                return currentViewState with { Exit = true };
+
+            if (currentViewState.entryType == GameInputEntryType.None)
+            {
+                return ProcessMainMenuCommand(currentViewState, currentKeyDown);
+            }
+            else
+            {
+                if (currentKeyDown.Key == ConsoleKey.Enter)
+                {
+                    return currentViewState.entryType switch
+                    {
+                        GameInputEntryType.MovementPosition => tryToMovePlayerForInput(currentViewState),
+                        _ => throw new NotImplementedException(),
+                    };
+                }
+                else
+                {
+                    return currentViewState with { currentBuildingInput = $"{currentViewState.currentBuildingInput}{currentKeyDown.KeyChar}" };
+                }
+            }
+        }
+
+        private static GameViewState ProcessMainMenuCommand(GameViewState currentViewState, ConsoleKeyInfo currentKeyDown)
         {
             (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
                 string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
             GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
                 ) = currentViewState;
 
-            ConsoleKeyInfo currentKeyDown = Console.ReadKey(true);
+            alertMessage = string.Empty;
 
-            if (currentViewState.Exit || currentKeyDown.Key == ConsoleKey.Escape)
-                return currentViewState with { Exit = true };
-
-            if (entryType == GameInputEntryType.None)
+            switch (currentKeyDown.Key)
             {
-                alertMessage = string.Empty;
-
-                switch (currentKeyDown.Key)
-                {
-                    case ConsoleKey.LeftArrow:
-                        if (viewPortXStart > 0)
-                            viewPortXStart--;
-                        else alertMessage = Constants.CannotMoveMap("left");
-                        break;
-                    case ConsoleKey.RightArrow:
-                        if (viewPortXStart < map.TotalX - xScreen)
-                            viewPortXStart++;
-                        else alertMessage = Constants.CannotMoveMap("right");
-                        break;
-                    case ConsoleKey.UpArrow:
-                        if (viewPortYStart > 0)
-                            viewPortYStart--;
-                        else alertMessage = Constants.CannotMoveMap("up");
-                        break;
-                    case ConsoleKey.DownArrow:
-                        if (viewPortYStart < map.TotalY - yScreen)
-                            viewPortYStart++;
-                        else alertMessage = Constants.CannotMoveMap("down");
-                        break;
-                    case ConsoleKey.M:
-                        currentBuildingInput = string.Empty;
-                        entryType = GameInputEntryType.MovementPosition;
-                        alertMessage = Constants.EnterMovementMessage;
-                        break;
-                    case ConsoleKey.B:
-                        currentBuildingInput = string.Empty;
-                        entryType = GameInputEntryType.ThingToBuild;
-                        alertMessage = Constants.EnterThingToBuild;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else
-            {
-                if (currentKeyDown.Key == ConsoleKey.Enter)
-                {
-                    switch (entryType)
-                    {
-                        case GameInputEntryType.MovementPosition:
-                            (map, alertMessage, entryType, currentBuildingInput,
-                                 gameflowStep, gameflowProcessingType, gameflowProcessingValue) = tryToMovePlayerForInput(map, entryType, currentBuildingInput,
-                                 gameflowStep, gameflowProcessingType, gameflowProcessingValue);
-                            gameflowStep = GameflowStep.Processing;
-                            gameflowProcessingValue = currentBuildingInput;
-                            gameflowProcessingType = GameflowProcessingType.MovingUser;
-                            break;
-                        default:
-                            throw new NotImplementedException();
-                    }
-                }
-                else
-                {
-                    currentBuildingInput = $"{currentBuildingInput}{currentKeyDown.KeyChar}";
-                }
+                case ConsoleKey.LeftArrow:
+                    if (viewPortXStart > 0)
+                        viewPortXStart--;
+                    else alertMessage = Constants.CannotMoveMap("left");
+                    break;
+                case ConsoleKey.RightArrow:
+                    if (viewPortXStart < map.TotalX - xScreen)
+                        viewPortXStart++;
+                    else alertMessage = Constants.CannotMoveMap("right");
+                    break;
+                case ConsoleKey.UpArrow:
+                    if (viewPortYStart > 0)
+                        viewPortYStart--;
+                    else alertMessage = Constants.CannotMoveMap("up");
+                    break;
+                case ConsoleKey.DownArrow:
+                    if (viewPortYStart < map.TotalY - yScreen)
+                        viewPortYStart++;
+                    else alertMessage = Constants.CannotMoveMap("down");
+                    break;
+                case ConsoleKey.M:
+                    currentBuildingInput = string.Empty;
+                    entryType = GameInputEntryType.MovementPosition;
+                    alertMessage = Constants.EnterMovementMessage;
+                    break;
+                case ConsoleKey.B:
+                    currentBuildingInput = string.Empty;
+                    entryType = GameInputEntryType.ThingToBuild;
+                    alertMessage = Constants.EnterThingToBuild;
+                    break;
+                default:
+                    break;
             }
 
             return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage,
                 entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
         }
 
-        private static (Map map, string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
-                                GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType,
-                                string gameflowProcessingValue)
-            tryToMovePlayerForInput(Map map, GameInputEntryType entryType, string currentBuildingInput,
-                                    GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType,
-                                    string gameflowProcessingValue)
+        private static GameViewState
+            tryToMovePlayerForInput(GameViewState gameView)
         {
-            string alertMessage;
+            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
+                string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
+            GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
+                ) = gameView;
 
             var parsedNewLocation = Position.ParseInputForNewLocation(currentBuildingInput);
             if (parsedNewLocation.IsSuccess)
@@ -171,13 +185,22 @@ namespace TextRTS
 
                 if (movePlayerNewMap.IsSuccess)
                 {
-                    map = movePlayerNewMap.AsSuccess;
+                    (bool final, map) = movePlayerNewMap.AsSuccess;
                     currentBuildingInput = string.Empty;
                     entryType = GameInputEntryType.None;
                     alertMessage = "You have moved to a new exiciting location";
 
-                    return (map, alertMessage, entryType, currentBuildingInput,
-                        gameflowStep, gameflowProcessingType, gameflowProcessingValue);
+                    if (!final)
+                    {
+                        gameflowStep = GameflowStep.Processing;
+                        gameflowProcessingValue = currentBuildingInput;
+                        gameflowProcessingType = GameflowProcessingType.MovingUser;
+                    } else
+                    {
+                        gameflowStep = GameflowStep.None;
+                        gameflowProcessingValue = currentBuildingInput;
+                        gameflowProcessingType = GameflowProcessingType.None;
+                    }
                 }
                 else
                 {
@@ -192,7 +215,8 @@ namespace TextRTS
                 currentBuildingInput = string.Empty;
             }
 
-            return (map, alertMessage, entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
+            return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage,
+                entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
         }
 
         public static void UpdateTableForMap(GameViewState gameViewModel)

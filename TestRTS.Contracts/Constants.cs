@@ -15,8 +15,10 @@ namespace TestRTS.Contracts
         public const string GenericUserDirections = "Arrow keys to navigate screen. M to move. Press Esc to exit.";
         public const string CannotMoveMapMessage = "You have reached the end of map and I cannot move {0} anymore.";
         public const string EnterMovementMessage = "Enter movement to attempt to move to? `xx,yy`";
-
         public const string EnterThingToBuild = "Enter what you want to build:";
+
+
+        public const string LocationDoesNotExistDefaultTerainName = "NA";
 
         // Not so constant constants
         public static string CannotMoveMap(string directionTryingToMoveTo) => string.Format(CannotMoveMapMessage, directionTryingToMoveTo);

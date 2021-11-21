@@ -87,8 +87,8 @@ namespace TextRTS.Domain.Tests
         }
 
         [Theory]
-        [InlineData(0, 1, 0,1)]
-        [InlineData(4, 7, 2,1)]
+        [InlineData(0, 1, 0, 1)]
+        [InlineData(4, 7, 2, 1)]
         [InlineData(0, 15, 0, 1)]
         [InlineData(4, 0, 2, 1)]
         public void Map_TryToMovePlayer_Succeeds(short x, short y, short xAfterStep, short yAfterStep)
@@ -98,7 +98,7 @@ namespace TextRTS.Domain.Tests
 
             Assert.True(result.IsSuccess);
 
-            var resultIds = result.AsSuccess.GetCharactersForLocation(xAfterStep, yAfterStep).AsSuccess.Select(x => x.Key).ToList();
+            var resultIds = result.AsSuccess.Item2.GetCharactersForLocation(xAfterStep, yAfterStep).AsSuccess.Select(x => x.Key).ToList();
             IEnumerable<string> expectedKeys = new List<string> { Constants.PlayerId };
             Assert.Equal(expectedKeys, resultIds);
         }

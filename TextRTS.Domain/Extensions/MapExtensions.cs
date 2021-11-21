@@ -57,7 +57,7 @@ namespace TextRTS.Domain.Extensions
             return new Result<RenderableMapRow, string>.Success(new RenderableMapRow(rowBuilder, y));
         }
 
-        public static Result<Map, string> TryToMovePlayer(this Map map, Position newPlayerPosition)
+        public static Result<(bool finalMovement, Map map), string> TryToMovePlayer(this Map map, Position newPlayerPosition)
         {
             var newChars = map.Characters;
             var player = newChars[Constants.PlayerId];
@@ -68,27 +68,29 @@ namespace TextRTS.Domain.Extensions
             if (!isValidToMoveTo)
                 return invalidMovementReason switch
                 {
-                    InvalidMovementReason.LocationDoesNotExist => new Result<Map, string>.Failure("Location does not exist on map."),
-                    InvalidMovementReason.ImpassableLocation => new Result<Map, string>.Failure($"You are not currently able to visit {terrainName} locations."),
-                    InvalidMovementReason.SomeoneAlreadyThere => new Result<Map, string>.Failure("Unable to move there someone is already there? Maybe you should attack them."),
+                    InvalidMovementReason.LocationDoesNotExist => new Result<(bool finalMovement, Map map), string>.Failure("Location does not exist on map."),
+                    InvalidMovementReason.ImpassableLocation => new Result<(bool finalMovement, Map map), string>.Failure($"You are not currently able to visit {terrainName} locations."),
+                    InvalidMovementReason.SomeoneAlreadyThere => new Result<(bool finalMovement, Map map), string>.Failure("Unable to move there someone is already there? Maybe you should attack them."),
                     _ => throw new NotImplementedException(),
                 };
 
             // So I can try in that direction.
-
             return TryPlayerStep(map, newPlayerPosition, newChars, player);
         }
 
-        private static Result<Map, string> TryPlayerStep(Map map, Position newPlayerPosition, Dictionary<string, Character> newChars, Character player)
+        private static Result<(bool finalMovement, Map map), string> TryPlayerStep(Map map, Position newPlayerPosition, Dictionary<string, Character> newChars, Character player)
         {
             var (xMovement, yMovement) = (newPlayerPosition.X - player.Position.X, newPlayerPosition.Y - player.Position.Y);
+
+
+            bool lastMove = (Math.Abs(xMovement) + Math.Abs(yMovement)) == 1;
 
             if (Math.Abs(xMovement) > 0)
             {
                 var positionToTest = new Position((short)(player.Position.X + (1 * Math.Sign(xMovement))), player.Position.Y);
                 (bool validStep, _, _) = map.GetLocationMovabilityStatus(newPlayerPosition);
                 if (validStep)
-                    return BuildNewMapWithStepedPlayer(map, positionToTest, newChars, player);
+                    return BuildNewMapWithStepedPlayer(lastMove, map, positionToTest, newChars, player);
             }
 
             if (Math.Abs(yMovement) > 0)
@@ -96,17 +98,17 @@ namespace TextRTS.Domain.Extensions
                 var positionToTest = new Position(player.Position.X, (short)(player.Position.Y + (1 * Math.Sign(yMovement))));
                 (bool validStep, _, _) = map.GetLocationMovabilityStatus(newPlayerPosition);
                 if (validStep)
-                    return BuildNewMapWithStepedPlayer(map, positionToTest, newChars, player);
+                    return BuildNewMapWithStepedPlayer(lastMove, map, positionToTest, newChars, player);
             }
 
-            return new Result<Map, string>.Failure("Unable to move in that direction.");
+            return new Result<(bool finalMovement, Map map), string>.Failure("Unable to move in that direction.");
         }
 
-        private static Result<Map, string> BuildNewMapWithStepedPlayer(Map map, Position newPlayerPosition, Dictionary<string, Character> newChars, Character player)
+        private static Result<(bool finalMovement, Map map), string> BuildNewMapWithStepedPlayer(bool lastMove, Map map, Position newPlayerPosition, Dictionary<string, Character> newChars, Character player)
         {
             newChars[Constants.PlayerId] = player with { Position = newPlayerPosition };
 
-            return new Result<Map, string>.Success(map with { Characters = newChars });
+            return new Result<(bool finalMovement, Map map), string>.Success((lastMove, map with { Characters = newChars }));
         }
 
         private static (bool isValidToMoveTo, InvalidMovementReason invalidMovementReason, string terrainName) GetLocationMovabilityStatus(this Map map, Position position)
@@ -116,7 +118,7 @@ namespace TextRTS.Domain.Extensions
             var characters = map.GetCharactersForLocation(position.X, position.Y);
 
             if (location.IsFailure)
-                return (false, InvalidMovementReason.LocationDoesNotExist, "NA");
+                return (false, InvalidMovementReason.LocationDoesNotExist, Constants.LocationDoesNotExistDefaultTerainName);
 
             var terrain = location.AsSuccess.TerainType;
 
