@@ -156,10 +156,10 @@ namespace TextRTS
         }
 
         private static (Map map, string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
-                                GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, 
-                                string gameflowProcessingValue) 
-            tryToMovePlayerForInput(Map map, GameInputEntryType entryType, string currentBuildingInput, 
-                                    GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, 
+                                GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType,
+                                string gameflowProcessingValue)
+            tryToMovePlayerForInput(Map map, GameInputEntryType entryType, string currentBuildingInput,
+                                    GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType,
                                     string gameflowProcessingValue)
         {
             string alertMessage;
@@ -198,16 +198,31 @@ namespace TextRTS
         public static void UpdateTableForMap(GameViewState gameViewModel)
         {
             (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
-                   string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
-               GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
-                   ) = gameViewModel;
+                    string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
+                    GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue)
+                    = gameViewModel;
 
-            if (string.IsNullOrEmpty(alertMessage))
-                alertMessage = Constants.GenericUserDirections;
 
-            table.Caption = entryType == GameInputEntryType.None ?
-                CaptionWithoutBuildingInput(alertMessage)
-                : CaptionWithBuildingInput(alertMessage, currentBuildingInput);
+            switch (gameflowStep)
+            {
+                case GameflowStep.AwaitingUserInput:
+                    if (string.IsNullOrEmpty(alertMessage))
+                        alertMessage = Constants.GenericUserDirections;
+
+                    table.Caption = entryType == GameInputEntryType.None ?
+                        CaptionWithoutBuildingInput(alertMessage)
+                        : CaptionWithBuildingInput(alertMessage, currentBuildingInput);
+
+                    break;
+                case GameflowStep.Processing:
+
+                    if (string.IsNullOrEmpty(alertMessage))
+                        alertMessage = Constants.GenericUserDirections;
+
+                    table.Caption = new TableTitle($":timer_clock:[red]{alertMessage}[/]:timer_clock:");
+                    break;
+            }
+
 
             for (int x = 1; x <= xScreen; x++)
                 table.Columns[x].Header = BuildColumnHeaderForXValue(x + viewPortXStart);
