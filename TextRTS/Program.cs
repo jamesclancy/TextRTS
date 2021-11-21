@@ -201,14 +201,21 @@ namespace TextRTS
                 gameflowProcessingType = GameflowProcessingType.MovingUser;
             }
 
-            return gameView with { alertMessage = alertMessage, currentBuildingInput = final ? string.Empty : gameflowProcessingValue, map = map, 
-                entryType = entryType, GameflowStep = gameflowStep, 
-                GameflowProcessingValue = gameflowProcessingValue, GameflowProcessingType = gameflowProcessingType };
-        }       
+            return gameView with
+            {
+                alertMessage = alertMessage,
+                currentBuildingInput = final ? string.Empty : gameflowProcessingValue,
+                map = map,
+                entryType = entryType,
+                GameflowStep = gameflowStep,
+                GameflowProcessingValue = gameflowProcessingValue,
+                GameflowProcessingType = gameflowProcessingType
+            };
+        }
 
         public static Table UpdateTableForMap(this Table table, GameViewState gameViewModel)
         {
-            (Map map, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,_,_,_,_,_,_)
+            (Map map, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart, _, _, _, _, _, _)
                     = gameViewModel;
 
             table.Caption = BuildCaptionForViewState(gameViewModel);
