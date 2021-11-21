@@ -65,7 +65,7 @@ namespace TextRTS.Domain.Extensions
             var characters = map.GetCharactersForLocation(newPlayerPosition.X, newPlayerPosition.Y);
 
             if (location.IsFailure)
-                return new Result<Map, string>.Failure("Location does not exist on map");
+                return new Result<Map, string>.Failure("Location does not exist on map.");
 
             var terrain = location.AsSuccess.TerainType;
 

@@ -104,15 +104,18 @@ namespace TextRTS.Domain.Tests
         }
 
         [Theory]
-        [InlineData(0, 0)]
-        [InlineData(4, 4)]
-        [InlineData(40, 4)]
-        public void Map_TryToMovePlayer_Failues(short x, short y)
+        [InlineData(0, 0, "You are not currently able to visit Water locations.")]
+        [InlineData(4, 4, "You are not currently able to visit Water locations.")]
+        [InlineData(40, 4, "Location does not exist on map.")]
+        public void Map_TryToMovePlayer_Failues(short x, short y, string errorMessage)
         {
             var tenByTwentyMap = TestMap(10, 20);
             var result = tenByTwentyMap.TryToMovePlayer(new Position(x, y));
 
             Assert.True(result.IsFailure);
+            Assert.Equal(errorMessage, result.AsFailure);
+
+            // ToDo: Add test for character already there
         }
     }
 }
