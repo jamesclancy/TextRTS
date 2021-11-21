@@ -17,8 +17,11 @@ namespace TestRTS.Contracts
         public const string EnterMovementMessage = "Enter movement to attempt to move to? `xx,yy`";
         public const string EnterThingToBuild = "Enter what you want to build:";
 
-
         public const string LocationDoesNotExistDefaultTerainName = "NA";
+
+        // Delays
+        public const int InputLoopDelay = 10;
+        public const int ProcessingLoopDelay = 100;
 
         // Not so constant constants
         public static string CannotMoveMap(string directionTryingToMoveTo) => string.Format(CannotMoveMapMessage, directionTryingToMoveTo);

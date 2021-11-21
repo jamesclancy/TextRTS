@@ -56,27 +56,28 @@ namespace TextRTS
                     for (int y = 0; y < yScreen; y++)
                         table.AddEmptyRow();
 
-                    GameViewState gameViewState = new GameViewState(map, table, xScreen, yScreen,
+                    GameViewState gameViewState = new GameViewState(map, xScreen, yScreen,
                         (short)0, (short)0, string.Empty,
                         GameInputEntryType.None, string.Empty, GameflowStep.AwaitingUserInput,
                         GameflowProcessingType.None, string.Empty);
 
                     while (true)
                     {
-                        UpdateTableForMap(gameViewState);
+                        table.UpdateTableForMap(gameViewState); // I am not certain if there is a good way to make this stateless using spectre console.
+                                                                // I am thinking this is best that can be done?
                         ctx.Refresh();
 
                         if (gameViewState.Exit)
                             return;
 
-                        switch(gameViewState.GameflowStep)
+                        switch (gameViewState.GameflowStep)
                         {
                             case GameflowStep.AwaitingUserInput:
-                                await Task.Delay(10);
+                                await Task.Delay(Constants.InputLoopDelay);
                                 gameViewState = ReduceKeyDowns(gameViewState);
                                 break;
                             case GameflowStep.Processing:
-                                await Task.Delay(100);
+                                await Task.Delay(Constants.ProcessingLoopDelay);
                                 gameViewState = ProcessStep(gameViewState);
                                 break;
                         }
@@ -123,7 +124,7 @@ namespace TextRTS
 
         private static GameViewState ProcessMainMenuCommand(GameViewState currentViewState, ConsoleKeyInfo currentKeyDown)
         {
-            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
+            (Map map, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
                 string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
             GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
                 ) = currentViewState;
@@ -166,87 +167,51 @@ namespace TextRTS
                     break;
             }
 
-            return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage,
+            return new GameViewState(map, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage,
                 entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
         }
 
         private static GameViewState
             tryToMovePlayerForInput(GameViewState gameView)
         {
-            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
-                string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
-            GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
-                ) = gameView;
-
-            var parsedNewLocation = Position.ParseInputForNewLocation(currentBuildingInput);
-            if (parsedNewLocation.IsSuccess)
+            var parsedNewLocation = Position.ParseInputForNewLocation(gameView.currentBuildingInput);
+            if (!parsedNewLocation.IsSuccess)
             {
-                var movePlayerNewMap = map.TryToMovePlayer(parsedNewLocation.AsSuccess);
-
-                if (movePlayerNewMap.IsSuccess)
-                {
-                    (bool final, map) = movePlayerNewMap.AsSuccess;
-                    currentBuildingInput = string.Empty;
-                    entryType = GameInputEntryType.None;
-                    alertMessage = "You have moved to a new exiciting location";
-
-                    if (!final)
-                    {
-                        gameflowStep = GameflowStep.Processing;
-                        gameflowProcessingValue = currentBuildingInput;
-                        gameflowProcessingType = GameflowProcessingType.MovingUser;
-                    } else
-                    {
-                        gameflowStep = GameflowStep.None;
-                        gameflowProcessingValue = currentBuildingInput;
-                        gameflowProcessingType = GameflowProcessingType.None;
-                    }
-                }
-                else
-                {
-
-                    alertMessage = $"{movePlayerNewMap.AsFailure}. Please enter another location (XX,YY):";
-                    currentBuildingInput = string.Empty;
-                }
-            }
-            else
-            {
-                alertMessage = $"{parsedNewLocation.AsFailure}. Please enter another location (XX,YY):";
-                currentBuildingInput = string.Empty;
+                return gameView with { alertMessage = parsedNewLocation.AsFailure, currentBuildingInput = string.Empty };
             }
 
-            return new GameViewState(map, table, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage,
-                entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
-        }
+            var movePlayerNewMap = gameView.map.TryToMovePlayer(parsedNewLocation.AsSuccess);
+            if (!movePlayerNewMap.IsSuccess)
+            {
+                return gameView with { alertMessage = movePlayerNewMap.AsFailure, currentBuildingInput = string.Empty };
+            }
 
-        public static void UpdateTableForMap(GameViewState gameViewModel)
+            (bool final, Map map) = movePlayerNewMap.AsSuccess;
+            var entryType = GameInputEntryType.None;
+            var alertMessage = "You have moved to a new exiciting location";
+
+            var gameflowStep = GameflowStep.AwaitingUserInput;
+            var gameflowProcessingValue = gameView.currentBuildingInput;
+            var gameflowProcessingType = GameflowProcessingType.None;
+
+            if (!final)
+            {
+                gameflowStep = GameflowStep.Processing;
+                gameflowProcessingValue = gameView.currentBuildingInput;
+                gameflowProcessingType = GameflowProcessingType.MovingUser;
+            }
+
+            return gameView with { alertMessage = alertMessage, currentBuildingInput = final ? string.Empty : gameflowProcessingValue, map = map, 
+                entryType = entryType, GameflowStep = gameflowStep, 
+                GameflowProcessingValue = gameflowProcessingValue, GameflowProcessingType = gameflowProcessingType };
+        }       
+
+        public static Table UpdateTableForMap(this Table table, GameViewState gameViewModel)
         {
-            (Map map, Table table, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
-                    string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
-                    GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue)
+            (Map map, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,_,_,_,_,_,_)
                     = gameViewModel;
 
-
-            switch (gameflowStep)
-            {
-                case GameflowStep.AwaitingUserInput:
-                    if (string.IsNullOrEmpty(alertMessage))
-                        alertMessage = Constants.GenericUserDirections;
-
-                    table.Caption = entryType == GameInputEntryType.None ?
-                        CaptionWithoutBuildingInput(alertMessage)
-                        : CaptionWithBuildingInput(alertMessage, currentBuildingInput);
-
-                    break;
-                case GameflowStep.Processing:
-
-                    if (string.IsNullOrEmpty(alertMessage))
-                        alertMessage = Constants.GenericUserDirections;
-
-                    table.Caption = new TableTitle($":timer_clock:[red]{alertMessage}[/]:timer_clock:");
-                    break;
-            }
-
+            table.Caption = BuildCaptionForViewState(gameViewModel);
 
             for (int x = 1; x <= xScreen; x++)
                 table.Columns[x].Header = BuildColumnHeaderForXValue(x + viewPortXStart);
@@ -254,7 +219,7 @@ namespace TextRTS
             var renderableMap = map.GetRenderableTable(viewPortXStart, viewPortYStart, xScreen, yScreen);
 
             if (renderableMap.IsFailure)
-                return;
+                return table;
 
             for (int y = 0; y < yScreen; y++)
             {
@@ -262,6 +227,29 @@ namespace TextRTS
 
                 for (int x = 0; x < xScreen; x++)
                     table.UpdateCell(y, x + 1, RenderCellContent(renderableMap, y, x));
+            }
+
+            return table;
+        }
+
+        private static TableTitle BuildCaptionForViewState(GameViewState gameViewModel)
+        {
+            string alertMessage = gameViewModel.alertMessage;
+
+            return gameViewModel.GameflowStep switch
+            {
+                GameflowStep.AwaitingUserInput => GenerateAwaitingUserInputMessage(gameViewModel, alertMessage),
+                GameflowStep.Processing => new TableTitle($"[green]:timer_clock:[/][red]{alertMessage}[/][green]:timer_clock:[/]"),
+                _ => throw new NotImplementedException(),
+            };
+
+            static TableTitle GenerateAwaitingUserInputMessage(GameViewState gameViewModel, string alertMessage)
+            {
+                if (string.IsNullOrEmpty(alertMessage))
+                    alertMessage = Constants.GenericUserDirections;
+                return (gameViewModel.entryType == GameInputEntryType.None) ?
+                    CaptionWithoutBuildingInput(alertMessage)
+                    : CaptionWithBuildingInput(alertMessage, gameViewModel.currentBuildingInput);
             }
         }
 
@@ -276,7 +264,7 @@ namespace TextRTS
         public static TableTitle CaptionWithoutBuildingInput(string alertMessage) => new TableTitle($"[red]{alertMessage}[/]");
         public static TableTitle CaptionWithBuildingInput(string alertMessage, string currentBuildingInput) => new TableTitle($"[red]{alertMessage}[/] : [bold yellow]{currentBuildingInput}[/]");
 
-        public record GameViewState(Map map, Table table,
+        public record GameViewState(Map map,
             short xScreen, short yScreen,
             short viewPortXStart, short viewPortYStart,
             string alertMessage,

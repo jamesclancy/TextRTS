@@ -88,7 +88,7 @@ namespace TextRTS.Domain.Extensions
             if (Math.Abs(xMovement) > 0)
             {
                 var positionToTest = new Position((short)(player.Position.X + (1 * Math.Sign(xMovement))), player.Position.Y);
-                (bool validStep, _, _) = map.GetLocationMovabilityStatus(newPlayerPosition);
+                (bool validStep, _, _) = map.GetLocationMovabilityStatus(positionToTest);
                 if (validStep)
                     return BuildNewMapWithStepedPlayer(lastMove, map, positionToTest, newChars, player);
             }
@@ -96,7 +96,7 @@ namespace TextRTS.Domain.Extensions
             if (Math.Abs(yMovement) > 0)
             {
                 var positionToTest = new Position(player.Position.X, (short)(player.Position.Y + (1 * Math.Sign(yMovement))));
-                (bool validStep, _, _) = map.GetLocationMovabilityStatus(newPlayerPosition);
+                (bool validStep, _, _) = map.GetLocationMovabilityStatus(positionToTest);
                 if (validStep)
                     return BuildNewMapWithStepedPlayer(lastMove, map, positionToTest, newChars, player);
             }
