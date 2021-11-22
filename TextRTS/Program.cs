@@ -18,14 +18,14 @@ namespace TextRTS
         private static TerainType GenerateTerain(short x, short y)
         {
             if (x != y)
-                return new TerainType("Water", true, "#0000ff", ":water_wave:");
+                return new TerainType(Constants.StaticDictionary.Water, new List<string>(), "#0000ff", ":water_wave:");
 
-            return new TerainType("Mountain", false, "#ffff00", ":mountain:");
+            return new TerainType(Constants.StaticDictionary.Mountain, new List<string> { "Flight" }, "#ffff00", ":mountain:");
         }
 
         private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
         {
-            { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:")) }
+            { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:"), new List<CharacterUpgrade>()) }
         };
 
         private static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap);
@@ -122,53 +122,28 @@ namespace TextRTS
             }
         }
 
-        private static GameViewState ProcessMainMenuCommand(GameViewState currentViewState, ConsoleKeyInfo currentKeyDown)
+        private static GameViewState ProcessMainMenuCommand(GameViewState previousGameViewState, ConsoleKeyInfo currentKeyDown)
         {
-            (Map map, short xScreen, short yScreen, short viewPortXStart, short viewPortYStart,
-                string alertMessage, GameInputEntryType entryType, string currentBuildingInput,
-            GameflowStep gameflowStep, GameflowProcessingType gameflowProcessingType, string gameflowProcessingValue
-                ) = currentViewState;
-
-            alertMessage = string.Empty;
-
-            switch (currentKeyDown.Key)
+            return currentKeyDown.Key switch
             {
-                case ConsoleKey.LeftArrow:
-                    if (viewPortXStart > 0)
-                        viewPortXStart--;
-                    else alertMessage = Constants.CannotMoveMap("left");
-                    break;
-                case ConsoleKey.RightArrow:
-                    if (viewPortXStart < map.TotalX - xScreen)
-                        viewPortXStart++;
-                    else alertMessage = Constants.CannotMoveMap("right");
-                    break;
-                case ConsoleKey.UpArrow:
-                    if (viewPortYStart > 0)
-                        viewPortYStart--;
-                    else alertMessage = Constants.CannotMoveMap("up");
-                    break;
-                case ConsoleKey.DownArrow:
-                    if (viewPortYStart < map.TotalY - yScreen)
-                        viewPortYStart++;
-                    else alertMessage = Constants.CannotMoveMap("down");
-                    break;
-                case ConsoleKey.M:
-                    currentBuildingInput = string.Empty;
-                    entryType = GameInputEntryType.MovementPosition;
-                    alertMessage = Constants.EnterMovementMessage;
-                    break;
-                case ConsoleKey.B:
-                    currentBuildingInput = string.Empty;
-                    entryType = GameInputEntryType.ThingToBuild;
-                    alertMessage = Constants.EnterThingToBuild;
-                    break;
-                default:
-                    break;
-            }
+                ConsoleKey.LeftArrow => BuildNewGameViewState(0, -1, Constants.CannotMoveMap("left"), previousGameViewState.entryType),
+                ConsoleKey.RightArrow => BuildNewGameViewState(0, +1, Constants.CannotMoveMap("right"), previousGameViewState.entryType),
+                ConsoleKey.UpArrow => BuildNewGameViewState(-1, 0, Constants.CannotMoveMap("Up"), previousGameViewState.entryType),
+                ConsoleKey.DownArrow => BuildNewGameViewState(1, 0, Constants.CannotMoveMap("down"), previousGameViewState.entryType),
+                ConsoleKey.M => BuildNewGameViewState(0, 0, Constants.EnterMovementMessage, GameInputEntryType.MovementPosition),
+                ConsoleKey.B => BuildNewGameViewState(0, 0, Constants.EnterThingToBuild, GameInputEntryType.ThingToBuild),
+                _ => previousGameViewState
+            };
 
-            return new GameViewState(map, xScreen, yScreen, viewPortXStart, viewPortYStart, alertMessage,
-                entryType, currentBuildingInput, gameflowStep, gameflowProcessingType, gameflowProcessingValue);
+            GameViewState BuildNewGameViewState(short yShift, short xShift, string alertMessage, GameInputEntryType gameInputEntryType)
+                => previousGameViewState with
+                {
+                    viewPortYStart = (short)(previousGameViewState.viewPortYStart + yShift),
+                    viewPortXStart = (short)(previousGameViewState.viewPortXStart + xShift),
+                    alertMessage = alertMessage,
+                    currentBuildingInput = String.Empty,
+                    entryType = gameInputEntryType
+                };
         }
 
         private static GameViewState

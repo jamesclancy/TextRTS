@@ -11,7 +11,7 @@ namespace TextRTS.Domain.Tests
     {
         private static Dictionary<string, Character> CharacterMap() => new Dictionary<string, Character>()
         {
-            { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:")) }
+            { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:"), new List<CharacterUpgrade>()) }
         };
 
         public static IEnumerable<MapSquare> TestSquares(short totalX, short totalY) =>
@@ -19,7 +19,10 @@ namespace TextRTS.Domain.Tests
                    .SelectMany(y => Enumerable.Range(0, totalX)
                                .Select(x =>
                                     new MapSquare(new Position((short)x, (short)y),
-                                    new TerainType("Water", x != y, "#0000ff", "🌊"))));
+                                    new TerainType(Constants.StaticDictionary.Terains.Water.Name, 
+                                        x == y ? new List<string> { Constants.StaticDictionary.Abilties.Flight } : new List<string>(), 
+                                        Constants.StaticDictionary.Terains.Water.HexCode , 
+                                        Constants.StaticDictionary.Terains.Water.CharacterString))));
 
         public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap());
 

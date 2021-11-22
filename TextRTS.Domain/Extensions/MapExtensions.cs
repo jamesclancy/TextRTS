@@ -63,7 +63,7 @@ namespace TextRTS.Domain.Extensions
             var player = newChars[Constants.PlayerId];
 
             (bool isValidToMoveTo, InvalidMovementReason invalidMovementReason, string terrainName)
-                = map.GetLocationMovabilityStatus(newPlayerPosition);
+                = map.GetLocationMovabilityStatus(newPlayerPosition, player.AbilitiesGranted);
 
             if (!isValidToMoveTo)
                 return invalidMovementReason switch
@@ -88,7 +88,7 @@ namespace TextRTS.Domain.Extensions
             if (Math.Abs(xMovement) > 0)
             {
                 var positionToTest = new Position((short)(player.Position.X + (1 * Math.Sign(xMovement))), player.Position.Y);
-                (bool validStep, _, _) = map.GetLocationMovabilityStatus(positionToTest);
+                (bool validStep, _, _) = map.GetLocationMovabilityStatus(positionToTest, player.AbilitiesGranted);
                 if (validStep)
                     return BuildNewMapWithStepedPlayer(lastMove, map, positionToTest, newChars, player);
             }
@@ -96,7 +96,7 @@ namespace TextRTS.Domain.Extensions
             if (Math.Abs(yMovement) > 0)
             {
                 var positionToTest = new Position(player.Position.X, (short)(player.Position.Y + (1 * Math.Sign(yMovement))));
-                (bool validStep, _, _) = map.GetLocationMovabilityStatus(positionToTest);
+                (bool validStep, _, _) = map.GetLocationMovabilityStatus(positionToTest, player.AbilitiesGranted);
                 if (validStep)
                     return BuildNewMapWithStepedPlayer(lastMove, map, positionToTest, newChars, player);
             }
@@ -111,7 +111,7 @@ namespace TextRTS.Domain.Extensions
             return new Result<(bool finalMovement, Map map), string>.Success((lastMove, map with { Characters = newChars }));
         }
 
-        private static (bool isValidToMoveTo, InvalidMovementReason invalidMovementReason, string terrainName) GetLocationMovabilityStatus(this Map map, Position position)
+        private static (bool isValidToMoveTo, InvalidMovementReason invalidMovementReason, string terrainName) GetLocationMovabilityStatus(this Map map, Position position, IEnumerable<string> abilties)
         {
 
             var location = map.GetSquareForLocation(position.X, position.Y);
@@ -122,7 +122,7 @@ namespace TextRTS.Domain.Extensions
 
             var terrain = location.AsSuccess.TerainType;
 
-            if (!terrain.IsPassable)
+            if (!terrain.IsPassable(abilties))
                 return (false, InvalidMovementReason.ImpassableLocation, terrain.Name);
 
             if (characters.IsSuccess && characters.AsSuccess.Any())

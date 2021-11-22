@@ -21,7 +21,18 @@ namespace TextRTS.Domain
 
     public record MapSquare(Position Position, TerainType TerainType);
 
-    public record TerainType(string Name, bool IsPassable, string ColorHexCode, string CharacterSymbol);
+    public record TerainType(string Name, IEnumerable<string> RequiredAbilities, string ColorHexCode, string CharacterSymbol)
+    {
+        public bool IsPassable(IEnumerable<string> abilities)
+        {
+            return abilities.Intersect(RequiredAbilities).Count() == RequiredAbilities.Count();
+        }
+     
+        public bool IsPassable(Character character)
+        {
+            return IsPassable(character.Upgrades.SelectMany(x => x.AbilitiesGranted));
+        }
+    }
 
     public record RenderableMapRow(List<RenderableMapSquare> RenderableMapSquares, short CurrentY);
 
@@ -38,7 +49,12 @@ namespace TextRTS.Domain
 
     public abstract record MoveableCharacter(Position Position);
 
+    public record CharacterUpgrade(string Id, string DisplayName, IEnumerable<string> AbilitiesGranted);
+
     public record CharacterSprite(string ColorHexCode, string CharacterSymbol);
 
-    public record Character(Position Position, CharacterSprite CharacterSprite) : MoveableCharacter(Position);
+    public record Character(Position Position, CharacterSprite CharacterSprite, IEnumerable<CharacterUpgrade> Upgrades) : MoveableCharacter(Position)
+    {
+        public IEnumerable<string> AbilitiesGranted => Upgrades.SelectMany(x => x.AbilitiesGranted).Distinct().ToList();
+    }
 }

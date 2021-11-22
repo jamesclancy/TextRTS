@@ -23,6 +23,38 @@ namespace TestRTS.Contracts
         public const int InputLoopDelay = 10;
         public const int ProcessingLoopDelay = 100;
 
+        public static class StaticDictionary
+        {
+            public static class Terains
+            {
+                public static class Water
+                {
+                    public const string Name = "Water";
+                    public const string CharacterString = "🌊";
+                    public const string HexCode = "#0000ff";
+                    public static List<string> RequiredAbilities = new List<string>();
+                }
+
+                public static class Mountain
+                {
+                    public const string Name = "Mountain";
+                    public const string CharacterString = "Water";
+                    public const string HexCode = "";
+                    public static List<string> RequiredAbilities = new List<string>();
+                }
+            }
+
+            public static class Abilties
+            {
+                public const string Flight = "Flight";
+            }
+
+
+            public const string Water = "Water";
+            public const string Flight = "Flight";
+            public const string Mountain = "Mountain";
+        }
+
         // Not so constant constants
         public static string CannotMoveMap(string directionTryingToMoveTo) => string.Format(CannotMoveMapMessage, directionTryingToMoveTo);
     }
