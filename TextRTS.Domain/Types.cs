@@ -27,7 +27,7 @@ namespace TextRTS.Domain
         {
             return abilities.Intersect(RequiredAbilities).Count() == RequiredAbilities.Count();
         }
-     
+
         public bool IsPassable(Character character)
         {
             return IsPassable(character.Upgrades.SelectMany(x => x.AbilitiesGranted));

@@ -19,9 +19,9 @@ namespace TextRTS.Domain.Tests
                    .SelectMany(y => Enumerable.Range(0, totalX)
                                .Select(x =>
                                     new MapSquare(new Position((short)x, (short)y),
-                                    new TerainType(Constants.StaticDictionary.Terains.Water.Name, 
-                                        x == y ? new List<string> { Constants.StaticDictionary.Abilties.Flight } : new List<string>(), 
-                                        Constants.StaticDictionary.Terains.Water.HexCode , 
+                                    new TerainType(Constants.StaticDictionary.Terains.Water.Name,
+                                        x == y ? new List<string> { Constants.StaticDictionary.Abilties.Flight } : new List<string>(),
+                                        Constants.StaticDictionary.Terains.Water.HexCode,
                                         Constants.StaticDictionary.Terains.Water.CharacterString))));
 
         public static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap());

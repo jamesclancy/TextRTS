@@ -25,7 +25,7 @@ namespace TextRTS
 
         private static Dictionary<string, Character> CharacterMap = new Dictionary<string, Character>()
         {
-            { "PLAYER", new Character(new Position(1, 1),new CharacterSprite("#434300", ":robot:"), new List<CharacterUpgrade>()) }
+            { "PLAYER", new Character(new Position(0, 1),new CharacterSprite("#434300", ":robot:"), new List<CharacterUpgrade>()) }
         };
 
         private static Map TestMap(short totalX, short totalY) => new Map(new List<MapSquare>(TestSquares(totalX, totalY)), CharacterMap);
